@@ -326,17 +326,23 @@ class YouTubeToMP3Converter:
             
             # Configure yt-dlp options based on format choice
             if format_choice == "mp3":
+                # Set audio quality for MP3
+                audio_quality = quality if quality != 'best' else '320'
+                
                 ydl_opts = {
                     'format': 'bestaudio/best',
                     'outtmpl': os.path.join(output_path, '%(title)s.%(ext)s'),
-                    'extractaudio': True,
-                    'audioformat': 'mp3',
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': audio_quality,
+                    }],
                     'progress_hooks': [self.progress_hook],
                     'noplaylist': True,
+                    'writeinfojson': False,
+                    'writesubtitles': False,
+                    'writeautomaticsub': False,
                 }
-                # Set audio quality
-                if quality != 'best':
-                    ydl_opts['audioquality'] = quality
             else:  # mp4
                 if quality == "best":
                     format_selector = 'best[ext=mp4]'
@@ -378,6 +384,7 @@ class YouTubeToMP3Converter:
                     self.total_size_var.set(f"Total: {filesize_mb:.1f} MB")
                 
                 # Download and convert
+                self.log("Downloading and processing...")
                 ydl.download([url])
                 
             # Final progress update
