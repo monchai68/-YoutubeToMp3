@@ -10,7 +10,7 @@ D:\code\python\YoutubeToMp3\.venv\Scripts\pip.exe install pyinstaller
 
 echo.
 echo Building EXE file...
-D:\code\python\YoutubeToMp3\.venv\Scripts\pyinstaller.exe --onefile --windowed --name "YouTube_to_MP3_Converter" youtubeToMp3.py
+D:\code\python\YoutubeToMp3\.venv\Scripts\pyinstaller.exe --onefile --windowed --name "YouTube_to_MP3_Converter" youtubeToMp3_V2.py
 
 echo.
 echo Build completed!

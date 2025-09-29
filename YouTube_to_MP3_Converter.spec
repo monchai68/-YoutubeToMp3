@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['youtubeToMp3.py'],
+    ['youtubeToMp3_V2.py'],
     pathex=[],
     binaries=[],
     datas=[],
