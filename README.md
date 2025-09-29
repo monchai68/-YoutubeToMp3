@@ -81,6 +81,9 @@ build_exe.bat
 pip install pyinstaller
 pyinstaller --onefile --windowed --name "YouTube_to_MP3_Converter" youtubeToMp3.py
 ```
+''' bash
+ D:/code/python/YoutubeToMp3/.venv/Scripts/pyinstaller.exe --onefile --windowed  --noconsole   --name "YouTube_to_MP3_Converter_v2" youtubeToMp3.py 
+'''
 
 ไฟล์ EXE จะอยู่ในโฟลเดอร์ `dist/YouTube_to_MP3_Converter.exe`
 
