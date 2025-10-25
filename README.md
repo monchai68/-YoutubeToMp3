@@ -1,15 +1,17 @@
-# YouTube to MP3/MP4 Converter
+# YouTube to MP3/MP4 Converter + Playlist Support
 
-โปรแกรม GUI สำหรับดาวน์โหลดวิดีโอจาก YouTube และแปลงเป็นไฟล์ MP3 หรือ MP4
+โปรแกรม GUI สำหรับดาวน์โหลดวิดีโอจาก YouTube และแปลงเป็นไฟล์ MP3 หรือ MP4 รองรับการดาวน์โหลด Playlist ทั้งหมด
 
 ## ฟีเจอร์
 
 - ✅ **EXE File พร้อมใช้งาน** - ไม่ต้องติดตั้ง Python!
 - ✅ ดาวน์โหลดวิดีโอจาก YouTube
 - ✅ แปลงเป็นไฟล์ **MP3** หรือดาวน์โหลดเป็น **MP4**
-- ✅ GUI ที่ใช้งานง่าย ด้วย Radio Button
+- ✅ **📁 Playlist Support** - ดาวน์โหลด YouTube Playlist ทั้งหมด!
+- ✅ GUI ที่ใช้งานง่าย ด้วย Radio Button และ Checkbox
 - ✅ เลือกคุณภาพได้ (ทั้งเสียงและวิดีโอ)
 - ✅ **Progress Bar แบบละเอียด** - แสดงเปอร์เซ็นต์, ความเร็ว, เวลาที่เหลือ
+- ✅ **Auto Organization** - จัดเก็บไฟล์ playlist ในโฟลเดอร์แยกตามชื่อ playlist
 - ✅ Log การทำงานแบบละเอียด
 - ✅ เปิดโฟลเดอร์ดาวน์โหลดได้
 - ✅ รองรับ URL YouTube ทุกรูปแบบ
@@ -40,8 +42,9 @@ python youtubeToMp3.py
 2. **เลือกรูปแบบไฟล์**: 
    - 🎵 **MP3** (เสียงอย่างเดียว) 
    - 🎬 **MP4** (วิดีโอพร้อมเสียง)
-3. **เลือกโฟลเดอร์** ที่ต้องการเก็บไฟล์ (ถ้าต้องการ)
-4. **เลือกคุณภาพ**:
+3. **เลือกโหมด Playlist**: ☑️ ถ้าต้องการดาวน์โหลดทั้ง playlist
+4. **เลือกโฟลเดอร์** ที่ต้องการเก็บไฟล์ (ถ้าต้องการ)
+5. **เลือกคุณภาพ**:
    - **MP3**: best, 320, 256, 192, 128 kbps
    - **MP4**: best, 1080p, 720p, 480p, 360p
 
@@ -85,7 +88,7 @@ pyinstaller --onefile --windowed --name "YouTube_to_MP3_Converter" youtubeToMp3.
  D:/code/python/YoutubeToMp3/.venv/Scripts/pyinstaller.exe --onefile --windowed  --noconsole   --name "YouTube_to_MP3_Converter_v2" youtubeToMp3.py 
 '''
 
-ไฟล์ EXE จะอยู่ในโฟลเดอร์ `dist/YouTube_to_MP3_Converter.exe`
+6. `dist/YouTube_to_MP3_Converter_Playlist.exe` - ไฟล์ EXE พร้อมใช้งาน + Playlist Support
 
 ## การใช้งาน
 
@@ -124,10 +127,12 @@ python youtubeToMp3.py
 ## ข้อมูลเพิ่มเติม
 
 - ไฟล์ MP3/MP4 จะถูกเก็บที่: `~/Downloads/YouTube_MP3/` (โดยค่าเริ่มต้น)
-- โปรแกรมรองรับ YouTube URL ทุกรูปแบบ
+- **📁 Playlist Organization**: ไฟล์ playlist จะถูกจัดเก็บในโฟลเดอร์ย่อยตามชื่อ playlist
+- โปรแกรมรองรับ YouTube URL ทุกรูปแบบ (ทั้ง video เดี่ยวและ playlist)
 - มี error handling ที่ดี
-- แสดง log แบบละเอียด
+- แสดง log แบบละเอียด พร้อม emoji icons
 - **Progress แบบละเอียด**: เปอร์เซ็นต์, ความเร็ว, เวลาที่เหลือ, ขนาดไฟล์
+- **Smart Naming**: ไฟล์ playlist จะมีหมายเลข index และจัดเรียงลำดับ
 - **EXE File**: ใช้งานได้ทันทีโดยไม่ต้องติดตั้ง Python
 
 ## การแก้ไขปัญหา

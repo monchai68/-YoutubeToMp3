@@ -19,8 +19,8 @@ import tempfile
 class YouTubeToMP3Converter:
     def __init__(self, root):
         self.root = root
-        self.root.title("YouTube to MP3 Converter")
-        self.root.geometry("600x500")
+        self.root.title("YouTube to MP3/MP4 Converter + Playlist Support")
+        self.root.geometry("650x550")
         self.root.resizable(True, True)
         
         # Create download folder if it doesn't exist
@@ -42,7 +42,7 @@ class YouTubeToMP3Converter:
         main_frame.columnconfigure(1, weight=1)
         
         # Title
-        title_label = ttk.Label(main_frame, text="YouTube to MP3 Converter", 
+        title_label = ttk.Label(main_frame, text="YouTube to MP3/MP4 Converter + Playlist", 
                                font=("Arial", 16, "bold"))
         title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
         
@@ -85,6 +85,13 @@ class YouTubeToMP3Converter:
                                    variable=self.format_var, value="mp4",
                                    command=self.on_format_change)
         mp4_radio.pack(side=tk.LEFT)
+        
+        # Playlist checkbox
+        self.playlist_var = tk.BooleanVar()
+        playlist_checkbox = ttk.Checkbutton(main_frame, text="Download entire playlist", 
+                                          variable=self.playlist_var,
+                                          command=self.on_playlist_change)
+        playlist_checkbox.grid(row=3, column=2, sticky=tk.W, padx=(10, 0), pady=5)
         
         # Quality selection
         ttk.Label(main_frame, text="Quality:").grid(row=4, column=0, sticky=tk.W, pady=5)
@@ -207,18 +214,44 @@ class YouTubeToMP3Converter:
     def on_format_change(self):
         """Handle format change event"""
         format_choice = self.format_var.get()
+        is_playlist = self.playlist_var.get()
+        
         if format_choice == "mp3":
             # For MP3, show audio quality options
             self.quality_combo['values'] = ["best", "320", "256", "192", "128"]
-            self.download_btn.configure(text="Download & Convert to MP3")
+            if is_playlist:
+                self.download_btn.configure(text="Download Playlist & Convert to MP3")
+            else:
+                self.download_btn.configure(text="Download & Convert to MP3")
             self.log("Format changed to MP3 (Audio only)")
         else:  # mp4
             # For MP4, show video quality options
             self.quality_combo['values'] = ["best", "1080p", "720p", "480p", "360p"]
-            self.download_btn.configure(text="Download as MP4")
+            if is_playlist:
+                self.download_btn.configure(text="Download Playlist as MP4")
+            else:
+                self.download_btn.configure(text="Download as MP4")
             self.log("Format changed to MP4 (Video with Audio)")
         
         self.quality_var.set("best")  # Reset to best quality
+        
+    def on_playlist_change(self):
+        """Handle playlist checkbox change event"""
+        is_playlist = self.playlist_var.get()
+        format_choice = self.format_var.get()
+        
+        if is_playlist:
+            self.log("📁 Playlist mode enabled - will download all videos in playlist")
+            if format_choice == "mp3":
+                self.download_btn.configure(text="Download Playlist & Convert to MP3")
+            else:
+                self.download_btn.configure(text="Download Playlist as MP4")
+        else:
+            self.log("🎵 Single video mode - will download one video only")
+            if format_choice == "mp3":
+                self.download_btn.configure(text="Download & Convert to MP3")
+            else:
+                self.download_btn.configure(text="Download as MP4")
             
     def log(self, message):
         """Add message to log"""
@@ -248,12 +281,29 @@ class YouTubeToMP3Converter:
         self.root.update()
         
     def validate_youtube_url(self, url):
-        """Validate if the URL is a valid YouTube URL"""
-        youtube_regex = re.compile(
+        """Validate if the URL is a valid YouTube URL (video or playlist)"""
+        # Pattern for single video
+        video_regex = re.compile(
             r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/'
             r'(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})'
         )
-        return youtube_regex.match(url) is not None
+        
+        # Pattern for playlist
+        playlist_regex = re.compile(
+            r'(https?://)?(www\.)?youtube\.com/'
+            r'(playlist\?list=|watch\?.*list=)([a-zA-Z0-9_-]+)'
+        )
+        
+        # Pattern for channel/user
+        channel_regex = re.compile(
+            r'(https?://)?(www\.)?youtube\.com/'
+            r'(c/|channel/|user/|@)([a-zA-Z0-9_-]+)'
+        )
+        
+        # Check if it matches any valid YouTube URL pattern
+        return (video_regex.match(url) is not None or 
+                playlist_regex.match(url) is not None or
+                channel_regex.match(url) is not None)
         
     def progress_hook(self, d):
         """Progress hook for yt-dlp with detailed information"""
@@ -318,8 +368,8 @@ class YouTubeToMP3Converter:
             self.update_status("Download error occurred")
             self.log(f"❌ Download error: {d.get('error', 'Unknown error')}")
             
-    def download_youtube_video(self, url, output_path, quality, format_choice):
-        """Download YouTube video as MP3 or MP4"""
+    def download_youtube_video(self, url, output_path, quality, format_choice, is_playlist=False):
+        """Download YouTube video/playlist as MP3 or MP4"""
         try:
             # Reset progress information
             self.reset_progress_info()
@@ -329,19 +379,50 @@ class YouTubeToMP3Converter:
                 # Set audio quality for MP3
                 audio_quality = quality if quality != 'best' else '320'
                 
+                # Template for playlist or single video
+                if is_playlist:
+                    outtmpl = os.path.join(output_path, '%(playlist)s', '%(playlist_index)s - %(title)s.%(ext)s')
+                else:
+                    outtmpl = os.path.join(output_path, '%(title)s.%(ext)s')
+                
                 ydl_opts = {
                     'format': 'bestaudio/best',
-                    'outtmpl': os.path.join(output_path, '%(title)s.%(ext)s'),
+                    'outtmpl': outtmpl,
                     'postprocessors': [{
                         'key': 'FFmpegExtractAudio',
                         'preferredcodec': 'mp3',
                         'preferredquality': audio_quality,
                     }],
                     'progress_hooks': [self.progress_hook],
-                    'noplaylist': True,
+                    'noplaylist': not is_playlist,  # Download playlist only if requested
                     'writeinfojson': False,
                     'writesubtitles': False,
                     'writeautomaticsub': False,
+                    # Advanced options to bypass 403 errors
+                    'nocheckcertificate': True,
+                    'socket_timeout': 30,
+                    'retries': 10,
+                    'fragment_retries': 10,
+                    'skip_unavailable_fragments': True,
+                    'extractor_retries': 5,
+                    'extractor_args': {
+                        'youtube': {
+                            'player_client': ['android', 'web'],
+                            'skip': ['dash', 'hls']
+                        }
+                    },
+                    # Headers to avoid 403 Forbidden
+                    'http_headers': {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Language': 'en-us,en;q=0.5',
+                        'Accept-Encoding': 'gzip,deflate',
+                        'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.7',
+                        'Connection': 'keep-alive',
+                    },
+                    'extractor_retries': 3,
+                    'fragment_retries': 3,
+                    'skip_unavailable_fragments': True,
                 }
             else:  # mp4
                 if quality == "best":
@@ -356,35 +437,88 @@ class YouTubeToMP3Converter:
                     format_selector = 'best[height<=360][ext=mp4]'
                 else:
                     format_selector = 'best[ext=mp4]'
+                
+                # Template for playlist or single video
+                if is_playlist:
+                    outtmpl = os.path.join(output_path, '%(playlist)s', '%(playlist_index)s - %(title)s.%(ext)s')
+                else:
+                    outtmpl = os.path.join(output_path, '%(title)s.%(ext)s')
                     
                 ydl_opts = {
                     'format': format_selector,
-                    'outtmpl': os.path.join(output_path, '%(title)s.%(ext)s'),
+                    'outtmpl': outtmpl,
                     'progress_hooks': [self.progress_hook],
-                    'noplaylist': True,
+                    'noplaylist': not is_playlist,
+                    'writeinfojson': False,
+                    'merge_output_format': 'mp4',
+                    # Advanced options to bypass 403 errors
+                    'nocheckcertificate': True,
+                    'socket_timeout': 30,
+                    'retries': 10,
+                    'fragment_retries': 10,
+                    'skip_unavailable_fragments': True,
+                    'extractor_retries': 5,
+                    'extractor_args': {
+                        'youtube': {
+                            'player_client': ['android', 'web'],
+                            'skip': ['dash', 'hls']
+                        }
+                    },
+                    # Headers to avoid 403 Forbidden
+                    'http_headers': {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Language': 'en-us,en;q=0.5',
+                        'Accept-Encoding': 'gzip,deflate',
+                        'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.7',
+                        'Connection': 'keep-alive',
+                    },
                 }
                 
             self.log(f"Starting download from: {url}")
             self.log(f"Format: {format_choice.upper()}, Quality: {quality}")
+            if is_playlist:
+                self.log("📁 Playlist mode enabled - downloading all videos")
             self.update_status("Initializing download...")
             
+            # Add cookies and additional options to avoid 403
+            ydl_opts.update({
+                'cookiefile': None,
+                'age_limit': None,
+                'default_search': None,
+                'youtube_include_dash_manifest': False,
+            })
+            
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                # Get video info first
+                # Get info first
                 info = ydl.extract_info(url, download=False)
-                title = info.get('title', 'Unknown')
-                duration = info.get('duration', 0)
-                filesize = info.get('filesize') or info.get('filesize_approx')
                 
-                self.log(f"Title: {title}")
-                self.log(f"Duration: {duration//60}:{duration%60:02d}")
-                
-                if filesize:
-                    filesize_mb = filesize / (1024 * 1024)
-                    self.log(f"Estimated size: {filesize_mb:.1f} MB")
-                    self.total_size_var.set(f"Total: {filesize_mb:.1f} MB")
+                if is_playlist and 'entries' in info:
+                    # Playlist info
+                    playlist_title = info.get('title', 'Unknown Playlist')
+                    playlist_count = len(info['entries'])
+                    self.log(f"📁 Playlist: {playlist_title}")
+                    self.log(f"📊 Total videos: {playlist_count}")
+                    
+                    # Estimate total size
+                    total_duration = sum(entry.get('duration', 0) for entry in info['entries'] if entry)
+                    self.log(f"⏱️ Total duration: {total_duration//3600}h {(total_duration%3600)//60}m")
+                else:
+                    # Single video info
+                    title = info.get('title', 'Unknown')
+                    duration = info.get('duration', 0)
+                    filesize = info.get('filesize') or info.get('filesize_approx')
+                    
+                    self.log(f"🎵 Title: {title}")
+                    self.log(f"⏱️ Duration: {duration//60}:{duration%60:02d}")
+                    
+                    if filesize:
+                        filesize_mb = filesize / (1024 * 1024)
+                        self.log(f"📊 Estimated size: {filesize_mb:.1f} MB")
+                        self.total_size_var.set(f"Total: {filesize_mb:.1f} MB")
                 
                 # Download and convert
-                self.log("Downloading and processing...")
+                self.log("🚀 Downloading and processing...")
                 ydl.download([url])
                 
             # Final progress update
@@ -396,11 +530,17 @@ class YouTubeToMP3Converter:
             if format_choice == "mp3":
                 self.update_status("MP3 conversion completed successfully!")
                 self.log("✓ Download and MP3 conversion completed successfully!")
-                messagebox.showinfo("Success", f"Successfully downloaded and converted to MP3:\n{title}")
+                if is_playlist:
+                    messagebox.showinfo("Success", f"Successfully downloaded and converted playlist to MP3!\n📁 Playlist: {info.get('title', 'Unknown')}\n📊 Videos: {len(info.get('entries', []))}")
+                else:
+                    messagebox.showinfo("Success", f"Successfully downloaded and converted to MP3:\n🎵 {info.get('title', 'Unknown')}")
             else:
                 self.update_status("MP4 download completed successfully!")
                 self.log("✓ MP4 download completed successfully!")
-                messagebox.showinfo("Success", f"Successfully downloaded MP4:\n{title}")
+                if is_playlist:
+                    messagebox.showinfo("Success", f"Successfully downloaded playlist as MP4!\n📁 Playlist: {info.get('title', 'Unknown')}\n📊 Videos: {len(info.get('entries', []))}")
+                else:
+                    messagebox.showinfo("Success", f"Successfully downloaded MP4:\n🎵 {info.get('title', 'Unknown')}")
             
         except Exception as e:
             error_msg = f"Error during download: {str(e)}"
@@ -438,10 +578,13 @@ class YouTubeToMP3Converter:
         # Disable download button during processing
         self.download_btn.configure(state="disabled")
         
+        # Get playlist option
+        is_playlist = self.playlist_var.get()
+        
         # Start download in separate thread
         download_thread = threading.Thread(
             target=self.download_youtube_video, 
-            args=(url, output_path, quality, format_choice)
+            args=(url, output_path, quality, format_choice, is_playlist)
         )
         download_thread.daemon = True
         download_thread.start()
